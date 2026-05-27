@@ -1,29 +1,28 @@
-// Landing page interactions
+// Landing page – clientseitig (statische Website / GitHub Pages)
 (function () {
     "use strict";
+
+    const ID_RE = /^[A-Za-z0-9_-]{6,64}$/;
+
+    function newParticipantId() {
+        // 12-stellige zufällige ID aus A-Za-z0-9 (kryptographisch sicher)
+        const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+        const bytes = new Uint8Array(12);
+        (window.crypto || window.msCrypto).getRandomValues(bytes);
+        let s = "";
+        for (let i = 0; i < bytes.length; i++) {
+            s += alphabet[bytes[i] % alphabet.length];
+        }
+        return s;
+    }
 
     const startBtn = document.getElementById("start-btn");
     const resumeForm = document.getElementById("resume-form");
     const resumeInput = document.getElementById("resume-id");
 
-    startBtn.addEventListener("click", async () => {
-        startBtn.disabled = true;
-        startBtn.textContent = "Teilnehmer-ID wird erstellt …";
-        try {
-            const res = await fetch("/api/start", { method: "POST" });
-            if (!res.ok) {
-                throw new Error("Server-Fehler: " + res.status);
-            }
-            const data = await res.json();
-            if (!data.participant_id) {
-                throw new Error("Keine Teilnehmer-ID erhalten.");
-            }
-            window.location.href = `/study?id=${encodeURIComponent(data.participant_id)}`;
-        } catch (err) {
-            startBtn.disabled = false;
-            startBtn.textContent = "An der Studie teilnehmen";
-            alert("Die Teilnehmer-ID konnte nicht erstellt werden.\n" + err.message);
-        }
+    startBtn.addEventListener("click", () => {
+        const pid = newParticipantId();
+        window.location.href = `study.html?id=${encodeURIComponent(pid)}`;
     });
 
     resumeForm.addEventListener("submit", (e) => {
@@ -33,10 +32,10 @@
             resumeInput.focus();
             return;
         }
-        if (!/^[A-Za-z0-9_-]{6,64}$/.test(id)) {
+        if (!ID_RE.test(id)) {
             alert("Die Teilnehmer-ID hat ein ungültiges Format.");
             return;
         }
-        window.location.href = `/study?id=${encodeURIComponent(id)}`;
+        window.location.href = `study.html?id=${encodeURIComponent(id)}`;
     });
 })();

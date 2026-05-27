@@ -1,69 +1,60 @@
 # Wenker-Studie · Online-Erhebung von Dialektübersetzungen
 
-Eine kleine Flask-Webanwendung für eine wissenschaftliche Studie. Teilnehmende
-übersetzen die 40 Standardsätze des Wenkerbogens in ihren Dialekt und machen
-einige Angaben zur Person.
+Statische Website für eine wissenschaftliche Studie. Teilnehmende übersetzen
+die 40 Standardsätze des Wenkerbogens in ihren Dialekt und machen einige
+Angaben zur Person. Die Seite ist als reine HTML/CSS/JS-Anwendung gebaut
+und kann direkt über **GitHub Pages** (oder jeden anderen Static-Host)
+ausgeliefert werden.
 
 ## Projektstruktur
 
 ```
 wenker_study/
-├── app.py                       # Flask-Backend (alle Routen)
-├── requirements.txt             # Python-Abhängigkeiten
-├── README.md                    # diese Datei
-├── templates/
-│   ├── index.html               # Landingpage
-│   └── study.html               # Studienseite
+├── index.html                   # Landingpage (Root)
+├── study.html                   # Studienseite (Root)
+├── .nojekyll                    # GitHub Pages: ohne Jekyll ausliefern
+├── .gitignore
+├── README.md
 ├── static/
 │   ├── css/style.css
 │   └── js/
-│       ├── index.js             # Logik der Landingpage
-│       └── study.js             # Logik der Studienseite
+│       ├── index.js             # Landing: ID erzeugen / Resume
+│       └── study.js             # Studie: Render, Save, Download
 └── data/
-    ├── texts/Wenkerbogen.json   # Quell-Sätze (id=0 = Standarddeutsch)
-    └── participants/            # Pro Teilnehmer eine <ID>.json
+    └── texts/Wenkerbogen.json   # Standarddeutsche Sätze (id=0)
 ```
 
-## Installation
+## Wie die Datenerhebung funktioniert (statisch, ohne Server)
 
-```bash
-cd /Users/christoph.raucheggersmycles.com/Documents/dump/wenker_study
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-```
+1. Auf der Landingpage erzeugt ein Klick auf **„An der Studie teilnehmen"**
+   eine zufällige 12-stellige Teilnehmer-ID (`crypto.getRandomValues`)
+   und leitet auf `study.html?id=<ID>` weiter.
+2. Antworten und Variablen werden im **`localStorage`** des Browsers
+   unter dem Schlüssel `wenker_study::<ID>` gespeichert. Erneutes Öffnen
+   mit derselben ID lädt den gespeicherten Stand.
+3. **„Zwischenspeichern"** schreibt nur in den `localStorage`.
+4. **„JSON herunterladen"** schreibt in den `localStorage` und triggert
+   einen Download `<ID>.json`.
+5. **„Abschicken"** setzt zusätzlich `submitted: true`, `submitted_at`
+   und `status: "submitted"` und löst ebenfalls einen JSON-Download aus.
+   Die Teilnehmenden senden diese Datei dann an die Studienleitung.
 
-## Starten
+> ⚠️ **Wichtig:** Da GitHub Pages keine serverseitige Logik kennt, gibt es
+> keine zentrale Speicherung. Die Auswertung erfolgt über die von den
+> Teilnehmenden eingesandten `<ID>.json`-Dateien. Wer einen anderen
+> Browser oder ein anderes Gerät benutzt, beginnt eine neue Sitzung.
 
-```bash
-source .venv/bin/activate
-python app.py
-```
-
-Standard-URL: <http://127.0.0.1:5050/>
-
-Die Studienseite hat folgende Form:
-
-- `http://127.0.0.1:5050/study?id=<TEILNEHMER_ID>`
-
-Neue Teilnehmer erhalten ihre ID automatisch über den Button "An der Studie
-teilnehmen" auf der Landingpage; die ID wird in der URL angezeigt und kann
-notiert werden, um die Studie später fortzusetzen.
-
-## Datenspeicherung
-
-Pro Teilnehmer wird eine JSON-Datei im Ordner `data/participants/` angelegt,
-benannt nach der Teilnehmer-ID (z. B. `data/participants/aB3cD4eF5gH6.json`).
-Beispielinhalt:
+## JSON-Format pro Teilnehmer
 
 ```json
 {
   "participant_id": "aB3cD4eF5gH6",
-  "created_at": "2026-05-27T11:00:00+00:00",
-  "updated_at": "2026-05-27T11:15:23+00:00",
-  "submitted_at": null,
-  "status": "in_progress",
-  "translations": ["Im Winta fliagn …", "Es heat glei auf …", "…"],
+  "created_at": "2026-05-27T11:00:00.000Z",
+  "updated_at": "2026-05-27T11:15:23.000Z",
+  "submitted_at": "2026-05-27T11:15:23.000Z",
+  "submitted": true,
+  "status": "submitted",
+  "translations": ["Im Winta fliagn …", "…"],
   "variables": {
     "PLZ": "8811",
     "age": "26",
@@ -74,28 +65,46 @@ Beispielinhalt:
 }
 ```
 
-Beim **Zwischenspeichern** wird `status` auf `in_progress` gesetzt, beim
-**Abschicken** wird `status` auf `submitted` gesetzt und `submitted_at`
-gefüllt. Auch nach dem Abschicken bleibt der Datensatz editierbar (jede
-weitere Speicherung wird in `updated_at` festgehalten).
+## Lokal testen
 
-## API-Übersicht
+GitHub Pages liefert über HTTP aus, daher reicht ein lokaler
+Static-Server (das direkte Öffnen via `file://` scheitert am
+`fetch` auf `data/texts/Wenkerbogen.json`):
 
-| Methode | Route                                  | Zweck                                |
-|--------:|----------------------------------------|--------------------------------------|
-| GET     | `/`                                    | Landingpage                          |
-| GET     | `/study?id=<pid>`                      | Studienseite (lädt clientseitig)     |
-| GET     | `/api/wenker`                          | Standardsätze (id=0)                 |
-| POST    | `/api/start`                           | Neue Teilnehmer-ID + leerer Datensatz|
-| GET     | `/api/participant/<pid>`               | Datensatz lesen                      |
-| POST    | `/api/participant/<pid>/save`          | Zwischenspeichern                    |
-| POST    | `/api/participant/<pid>/submit`        | Endgültig abschicken                 |
+```bash
+cd /Users/christoph.raucheggersmycles.com/Documents/dump/wenker_study
+python3 -m http.server 8000
+# Browser:
+# http://127.0.0.1:8000/                          (Landing)
+# http://127.0.0.1:8000/study.html?id=TESTID01    (Studie)
+```
 
-## Hinweise zur Studie
+## Auf GitHub Pages veröffentlichen
+
+1. Ein leeres Repo auf GitHub anlegen, z. B. `wenker-studie`.
+2. Den Inhalt dieses Ordners committen und pushen:
+   ```bash
+   cd /Users/christoph.raucheggersmycles.com/Documents/dump/wenker_study
+   git init
+   git add .
+   git commit -m "Initial: Wenker-Studie (static)"
+   git branch -M main
+   git remote add origin git@github.com:<USERNAME>/wenker-studie.git
+   git push -u origin main
+   ```
+3. In den Repo-Settings → **Pages** als Source `main` / `/ (root)` wählen.
+4. Die Studie ist anschließend unter
+   `https://<USERNAME>.github.io/wenker-studie/` erreichbar.
+   - Landing: `https://<USERNAME>.github.io/wenker-studie/`
+   - Resume: `https://<USERNAME>.github.io/wenker-studie/study.html?id=<ID>`
+
+Eine `.nojekyll`-Datei sorgt dafür, dass GitHub Pages die Dateien direkt
+ausliefert und keine Jekyll-Verarbeitung anwendet.
+
+## Hinweise
 
 - Die Liste der Dialekte ist auf österreichische Bundesländer ausgelegt
-  (Wienerisch, Steirisch, …) plus eine Freitext-Option "anderer".
-- Das Feld "Welchen Dialekt?" erscheint nur, wenn als vertrauteste
-  Sprechweise "Dialekt" gewählt wird.
-- Die Teilnehmer-IDs sind 12-stellige zufällige alphanumerische Strings
-  (`secrets`-Modul). Sie sind URL-safe und kollisionsfrei.
+  (Wienerisch, Steirisch, …) plus eine Freitext-Option „anderer".
+- Das Feld „Welchen Dialekt?" erscheint nur, wenn als vertrauteste
+  Sprechweise „Dialekt" gewählt wird.
+- Die Teilnehmer-IDs sind 12-stellige zufällige alphanumerische Strings.

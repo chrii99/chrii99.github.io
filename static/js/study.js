@@ -1,8 +1,13 @@
-// Study page – sentence-by-sentence translation + participant variables
+// Study page – clientseitig (statische Website / GitHub Pages)
+// Persistenz: localStorage pro Teilnehmer-ID. Abschicken => JSON-Download.
 (function () {
     "use strict";
 
     const ID_RE = /^[A-Za-z0-9_-]{6,64}$/;
+    const STORAGE_PREFIX = "wenker_study::";
+    // Relativer Pfad funktioniert sowohl bei username.github.io/<repo>/ als
+    // auch bei lokaler Auslieferung über `python -m http.server`.
+    const WENKER_URL = "data/texts/Wenkerbogen.json";
 
     const $ = (sel) => document.querySelector(sel);
 
@@ -25,11 +30,64 @@
 
     const saveBtn = $("#save-btn");
     const submitBtn = $("#submit-btn");
+    const downloadBtn = $("#download-btn");
     const feedback = $("#action-feedback");
+
+    let wenkerSentences = []; // wird einmalig geladen
+
+    // ---------- helpers ----------
 
     function getIdFromUrl() {
         const params = new URLSearchParams(window.location.search);
         return (params.get("id") || "").trim();
+    }
+
+    function nowIso() {
+        return new Date().toISOString();
+    }
+
+    function storageKey(pid) {
+        return STORAGE_PREFIX + pid;
+    }
+
+    function emptyRecord(pid, nSentences) {
+        const now = nowIso();
+        return {
+            participant_id: pid,
+            created_at: now,
+            updated_at: now,
+            submitted_at: null,
+            submitted: false,
+            status: "in_progress",
+            translations: new Array(nSentences).fill(""),
+            variables: {
+                PLZ: "",
+                age: "",
+                gender: "",
+                sprechweise: "",
+                dialekt: "",
+            },
+        };
+    }
+
+    function loadRecord(pid) {
+        const raw = localStorage.getItem(storageKey(pid));
+        if (!raw) return null;
+        try {
+            const rec = JSON.parse(raw);
+            // Abwärtskompatibilität
+            if (typeof rec.submitted !== "boolean") {
+                rec.submitted = rec.status === "submitted";
+            }
+            return rec;
+        } catch (_) {
+            return null;
+        }
+    }
+
+    function saveRecord(rec) {
+        rec.updated_at = nowIso();
+        localStorage.setItem(storageKey(rec.participant_id), JSON.stringify(rec));
     }
 
     function showError(msg) {
@@ -51,12 +109,12 @@
     }
 
     function setSubmittedBanner(record) {
-        if (record.status === "submitted") {
+        if (record.submitted) {
             statusBanner.hidden = false;
             statusBanner.textContent =
                 "Diese Studie wurde bereits abgeschickt (" +
                 new Date(record.submitted_at).toLocaleString() +
-                "). Änderungen werden weiterhin gespeichert.";
+                "). Sie können den Datensatz weiterhin bearbeiten und erneut herunterladen.";
         } else {
             statusBanner.hidden = true;
         }
@@ -109,6 +167,21 @@
         return { translations, variables };
     }
 
+    function mergePayloadIntoRecord(record, payload) {
+        const n = wenkerSentences.length;
+        const cleaned = (payload.translations || []).slice(0, n).map((t) => String(t || ""));
+        while (cleaned.length < n) cleaned.push("");
+        record.translations = cleaned;
+
+        const allowed = ["PLZ", "age", "gender", "sprechweise", "dialekt"];
+        allowed.forEach((k) => {
+            if (k in payload.variables) {
+                record.variables[k] = String(payload.variables[k] || "");
+            }
+        });
+        return record;
+    }
+
     function applyRecordToForm(record) {
         const v = record.variables || {};
         fields.PLZ.value = v.PLZ || "";
@@ -118,7 +191,6 @@
 
         updateDialektVisibility();
 
-        // Dialekt-Vorbelegung
         const presetDialekt = v.dialekt || "";
         const knownOptions = Array.from(fields.dialekt.options).map((o) => o.value);
         if (presetDialekt && !knownOptions.includes(presetDialekt)) {
@@ -142,83 +214,74 @@
         }
     }
 
-    async function loadAll(pid) {
-        try {
-            const [wenkerRes, partRes] = await Promise.all([
-                fetch("/api/wenker"),
-                fetch(`/api/participant/${encodeURIComponent(pid)}`),
-            ]);
-            if (!wenkerRes.ok) throw new Error("Wenker-Sätze konnten nicht geladen werden.");
-            if (!partRes.ok) throw new Error("Teilnehmer-Datensatz konnte nicht geladen werden.");
-            const wenker = await wenkerRes.json();
-            const record = await partRes.json();
-
-            participantIdEl.textContent = record.participant_id;
-            renderSentences(wenker.sentences, record.translations);
-            applyRecordToForm(record);
-            setSubmittedBanner(record);
-
-            loadingEl.hidden = true;
-            formEl.hidden = false;
-        } catch (err) {
-            showError("Fehler: " + err.message);
-        }
-    }
-
-    async function postJSON(url, body) {
-        const res = await fetch(url, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(body || {}),
+    function triggerDownload(record) {
+        const blob = new Blob([JSON.stringify(record, null, 2)], {
+            type: "application/json;charset=utf-8",
         });
-        if (!res.ok) {
-            const text = await res.text().catch(() => "");
-            throw new Error("Server-Fehler " + res.status + ": " + text);
-        }
-        return res.json();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `${record.participant_id}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(url), 500);
     }
 
-    async function handleSave() {
+    // ---------- handlers ----------
+
+    function handleSave() {
         const pid = participantIdEl.textContent;
-        saveBtn.disabled = true;
-        try {
-            const payload = collectPayload();
-            const r = await postJSON(
-                `/api/participant/${encodeURIComponent(pid)}/save`,
-                payload
-            );
-            setFeedback("Zwischengespeichert ✓", "ok");
-        } catch (err) {
-            setFeedback("Speichern fehlgeschlagen: " + err.message, "err");
-        } finally {
-            saveBtn.disabled = false;
+        const rec = loadRecord(pid) || emptyRecord(pid, wenkerSentences.length);
+        mergePayloadIntoRecord(rec, collectPayload());
+        // Schon-abgeschickte Datensätze bleiben submitted=true
+        if (!rec.submitted) {
+            rec.submitted = false;
+            rec.status = "in_progress";
         }
+        saveRecord(rec);
+        setFeedback("Zwischengespeichert ✓", "ok");
     }
 
-    async function handleSubmit(e) {
+    function handleDownload() {
+        const pid = participantIdEl.textContent;
+        const rec = loadRecord(pid) || emptyRecord(pid, wenkerSentences.length);
+        // Letzten Stand aus dem Formular reinmergen, dann speichern und herunterladen
+        mergePayloadIntoRecord(rec, collectPayload());
+        if (!rec.submitted) rec.status = "in_progress";
+        saveRecord(rec);
+        triggerDownload(rec);
+        setFeedback("JSON heruntergeladen ✓", "ok");
+    }
+
+    function handleSubmit(e) {
         e.preventDefault();
         const pid = participantIdEl.textContent;
-        if (!confirm("Studie wirklich abschicken? Sie können den Datensatz danach weiterhin bearbeiten und erneut speichern.")) {
+        if (!confirm("Studie wirklich abschicken? Es wird eine JSON-Datei heruntergeladen, die Sie an die Studienleitung senden.")) {
             return;
         }
-        submitBtn.disabled = true;
-        try {
-            const payload = collectPayload();
-            const r = await postJSON(
-                `/api/participant/${encodeURIComponent(pid)}/submit`,
-                payload
-            );
-            setFeedback("Studie erfolgreich abgeschickt ✓", "ok");
-            statusBanner.hidden = false;
-            statusBanner.textContent =
-                "Diese Studie wurde abgeschickt (" +
-                new Date(r.submitted_at).toLocaleString() +
-                "). Vielen Dank für Ihre Teilnahme!";
-        } catch (err) {
-            setFeedback("Abschicken fehlgeschlagen: " + err.message, "err");
-        } finally {
-            submitBtn.disabled = false;
+        const rec = loadRecord(pid) || emptyRecord(pid, wenkerSentences.length);
+        mergePayloadIntoRecord(rec, collectPayload());
+        rec.submitted = true;
+        rec.status = "submitted";
+        rec.submitted_at = nowIso();
+        saveRecord(rec);
+        triggerDownload(rec);
+        setSubmittedBanner(rec);
+        setFeedback("Abgeschickt + heruntergeladen ✓", "ok");
+    }
+
+    // ---------- boot ----------
+
+    async function loadWenker() {
+        const res = await fetch(WENKER_URL, { cache: "no-cache" });
+        if (!res.ok) throw new Error("Wenkerbogen.json (" + res.status + ")");
+        const data = await res.json();
+        const std = (Array.isArray(data) ? data : []).find((e) => e && e.id === 0);
+        if (!std || !Array.isArray(std.sentences)) {
+            throw new Error("Eintrag mit id=0 (Standarddeutsch) nicht gefunden.");
         }
+        return std.sentences;
     }
 
     function initEvents() {
@@ -228,6 +291,7 @@
             if (dialektOther.hidden) dialektOther.value = "";
         });
         saveBtn.addEventListener("click", handleSave);
+        downloadBtn.addEventListener("click", handleDownload);
         formEl.addEventListener("submit", handleSubmit);
 
         copyIdBtn.addEventListener("click", async () => {
@@ -240,16 +304,39 @@
         });
     }
 
-    // Boot
-    const pid = getIdFromUrl();
-    if (!pid) {
-        showError("Keine Teilnehmer-ID in der URL. Bitte über die Startseite teilnehmen.");
-        return;
+    async function main() {
+        const pid = getIdFromUrl();
+        if (!pid) {
+            showError("Keine Teilnehmer-ID in der URL. Bitte über die Startseite teilnehmen.");
+            return;
+        }
+        if (!ID_RE.test(pid)) {
+            showError("Die Teilnehmer-ID in der URL hat ein ungültiges Format.");
+            return;
+        }
+        try {
+            wenkerSentences = await loadWenker();
+        } catch (err) {
+            showError("Konnte Wenker-Sätze nicht laden: " + err.message);
+            return;
+        }
+
+        let record = loadRecord(pid);
+        if (!record) {
+            record = emptyRecord(pid, wenkerSentences.length);
+            saveRecord(record);
+        }
+
+        participantIdEl.textContent = record.participant_id;
+        renderSentences(wenkerSentences, record.translations);
+        applyRecordToForm(record);
+        setSubmittedBanner(record);
+
+        initEvents();
+
+        loadingEl.hidden = true;
+        formEl.hidden = false;
     }
-    if (!ID_RE.test(pid)) {
-        showError("Die Teilnehmer-ID in der URL hat ein ungültiges Format.");
-        return;
-    }
-    initEvents();
-    loadAll(pid);
+
+    main();
 })();
