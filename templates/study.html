@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="de">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Wenker-Studie · Studienseite</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <main class="container">
+        <header class="study-header">
+            <h1>Wenker-Studie</h1>
+            <p class="participant-info">
+                Teilnehmer-ID: <code id="participant-id">–</code>
+                <button type="button" id="copy-id" class="btn-link" title="ID kopieren">kopieren</button>
+            </p>
+            <p class="hint">
+                Bitte notieren Sie sich diese ID. Mit
+                <code>/study?id=IHRE_ID</code> können Sie jederzeit zurückkehren
+                und weiterarbeiten.
+            </p>
+            <div id="status-banner" class="status-banner" hidden></div>
+        </header>
+
+        <div id="loading" class="card">Lade Daten …</div>
+
+        <form id="study-form" hidden>
+            <!-- Teil 1: Übersetzungen -->
+            <section class="card">
+                <h2>Teil 1 · Wenker-Sätze in Ihren Dialekt übersetzen</h2>
+                <p class="hint">
+                    Unter jedem standarddeutschen Satz steht ein Eingabefeld.
+                    Übersetzen Sie den Satz in Ihre Mundart. Wenn ein Satz in
+                    Ihrem Dialekt nicht vorkommt, lassen Sie das Feld leer.
+                </p>
+                <ol id="sentences-list" class="sentences-list"></ol>
+            </section>
+
+            <!-- Teil 2: Variablen -->
+            <section class="card">
+                <h2>Teil 2 · Angaben zur Person</h2>
+
+                <div class="field">
+                    <label for="var-plz">Postleitzahl (PLZ)</label>
+                    <input type="text" id="var-plz" name="PLZ" inputmode="numeric"
+                           pattern="[0-9A-Za-z\- ]{3,10}" placeholder="z. B. 8811">
+                </div>
+
+                <div class="field">
+                    <label for="var-age">Alter</label>
+                    <input type="number" id="var-age" name="age" min="0" max="120" placeholder="z. B. 26">
+                </div>
+
+                <div class="field">
+                    <label for="var-gender">Geschlecht</label>
+                    <select id="var-gender" name="gender">
+                        <option value="">– bitte auswählen –</option>
+                        <option value="w">weiblich</option>
+                        <option value="m">männlich</option>
+                        <option value="d">divers</option>
+                        <option value="k.A.">keine Angabe</option>
+                    </select>
+                </div>
+
+                <div class="field">
+                    <label for="var-sprechweise">Welche ist Ihre vertrauteste Sprechweise?</label>
+                    <select id="var-sprechweise" name="sprechweise">
+                        <option value="">– bitte auswählen –</option>
+                        <option value="Hochdeutsch">Hochdeutsch</option>
+                        <option value="regional gefärbte Alltagssprache">regional gefärbte Alltagssprache</option>
+                        <option value="Dialekt">Dialekt</option>
+                    </select>
+                </div>
+
+                <div class="field" id="dialekt-field" hidden>
+                    <label for="var-dialekt">Welchen Dialekt?</label>
+                    <select id="var-dialekt" name="dialekt">
+                        <option value="">– bitte auswählen –</option>
+                        <option value="Wienerisch">Wienerisch</option>
+                        <option value="Niederösterreichisch">Niederösterreichisch</option>
+                        <option value="Oberösterreichisch">Oberösterreichisch</option>
+                        <option value="Steirisch">Steirisch</option>
+                        <option value="Kärntnerisch">Kärntnerisch</option>
+                        <option value="Salzburgerisch">Salzburgerisch</option>
+                        <option value="Tirolerisch">Tirolerisch</option>
+                        <option value="Vorarlbergerisch">Vorarlbergerisch</option>
+                        <option value="Burgenländisch">Burgenländisch</option>
+                        <option value="anderer">anderer (bitte eintragen)</option>
+                    </select>
+                    <input type="text" id="var-dialekt-other" placeholder="anderer Dialekt …" hidden>
+                </div>
+            </section>
+
+            <!-- Aktionen -->
+            <section class="card actions">
+                <button type="button" id="save-btn" class="btn btn-secondary">Zwischenspeichern</button>
+                <button type="submit" id="submit-btn" class="btn btn-primary">Abschicken</button>
+                <span id="action-feedback" class="feedback" aria-live="polite"></span>
+            </section>
+        </form>
+
+        <footer class="footer">
+            <p>© Wenker-Studie · wissenschaftliche Erhebung</p>
+        </footer>
+    </main>
+
+    <script src="{{ url_for('static', filename='js/study.js') }}"></script>
+</body>
+</html>
