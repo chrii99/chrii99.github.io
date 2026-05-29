@@ -29,10 +29,15 @@
             <section class="card">
                 <h2>Teil 1 · Wenker-Sätze in Ihren Dialekt übersetzen</h2>
                 <p class="hint">
-                    Unter jedem standarddeutschen Satz steht ein Eingabefeld.
-                    Übersetzen Sie den Satz in Ihre Mundart. Wenn ein Satz in
-                    Ihrem Dialekt nicht vorkommt, lassen Sie das Feld leer.
+                    Unter jedem standarddeutschen Satz steht ein Eingabefeld
+                    für die schriftliche Übersetzung sowie eine optionale
+                    Audio-Aufnahme. Wenn ein Satz in Ihrem Dialekt nicht
+                    vorkommt, lassen Sie beides leer. Maximale Aufnahmedauer
+                    pro Satz: <strong>30 Sekunden</strong>.
                 </p>
+                <div id="mic-status" class="mic-status hint">
+                    🎙 Audio-Aufnahme: Mikrofon-Zugriff wird beim ersten Klick auf „Aufnehmen" angefordert.
+                </div>
                 <ol id="sentences-list" class="sentences-list"></ol>
             </section>
 
@@ -94,7 +99,7 @@
             <!-- Aktionen -->
             <section class="card actions">
                 <button type="button" id="save-btn" class="btn btn-secondary">Zwischenspeichern</button>
-                <button type="button" id="download-btn" class="btn btn-secondary">JSON herunterladen</button>
+                <button type="button" id="download-btn" class="btn btn-secondary">ZIP herunterladen</button>
                 <button type="submit" id="submit-btn" class="btn btn-primary">Abschicken</button>
                 <span id="action-feedback" class="feedback" aria-live="polite"></span>
             </section>
@@ -105,6 +110,9 @@
         </footer>
     </main>
 
+    <!-- JSZip für ZIP-Export beim Abschicken -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"
+            crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <script src="static/js/study.js"></script>
 </body>
 </html>
