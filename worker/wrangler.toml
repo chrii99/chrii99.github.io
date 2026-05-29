@@ -17,8 +17,9 @@ MAX_BYTES = "52428800"   # 50 MB
 
 # R2-Binding (Bucket muss in Cloudflare R2 vorab erstellt sein)
 [[r2_buckets]]
-binding = "STUDY_BUCKET"
 bucket_name = "ma-dialekt-studie"
+binding = "ma_dialekt_studie"
+jurisdiction = "eu"
 
 # Optional: separater Bucket für Staging/Tests
 # preview_bucket_name = "ma-dialekt-studie-dev"
