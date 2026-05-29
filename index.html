@@ -17,32 +17,188 @@
             <h2>Worum geht es?</h2>
             <p>
                 In dieser wissenschaftlichen Studie geht es darum, klassische
-                <em>Wenker-Sätze</em> aus dem Standarddeutschen in Ihren eigenen
-                Dialekt zu übersetzen. Die Daten helfen uns, regionale Variation
-                im deutschen Sprachraum besser zu verstehen.
+                <em>Wenker-Sätze</em> aus dem Standarddeutschen in Ihren
+                eigenen Dialekt zu übersetzen — schriftlich und optional als
+                kurze Audio-Aufnahme (max. 30 Sekunden je Satz). Die Daten
+                helfen uns, regionale Variation im deutschen Sprachraum besser
+                zu verstehen.
             </p>
             <p>
                 Die Teilnahme ist anonym. Sie erhalten eine <strong>eindeutige
                 Teilnehmer-ID</strong>, mit der Sie die Studie auch später
-                fortsetzen können – einfach die ID in die URL einfügen:
-                <code>study.html?id=IHRE_ID</code>.
+                fortsetzen können.
             </p>
             <p>
                 Die Studie besteht aus zwei Teilen:
             </p>
             <ol>
-                <li>Übersetzung von 40 Standardsätzen in Ihren Dialekt.</li>
-                <li>Einige kurze Angaben zu Ihrer Person (PLZ, Alter, Geschlecht, Sprechweise).</li>
+                <li>Übersetzung von 40 Standardsätzen in Ihren Dialekt
+                    (schriftlich + optional Audio).</li>
+                <li>Einige kurze Angaben zu Ihrer Person (PLZ, Alter,
+                    Geschlecht, Sprechweise).</li>
             </ol>
+        </section>
+
+        <section class="card consent-card">
+            <h2>Einwilligungserklärung &amp; Datenschutz</h2>
+
             <p class="hint">
-                <strong>Hinweis:</strong> Die Antworten werden im selben Browser
-                lokal gespeichert. Beim Abschicken wird eine JSON-Datei
-                heruntergeladen, die Sie an die Studienleitung senden.
+                Bitte lesen Sie die folgenden Hinweise vor der Teilnahme
+                aufmerksam durch. Mit dem Setzen des Häkchens und dem Klick
+                auf <em>„An der Studie teilnehmen"</em> erklären Sie sich
+                ausdrücklich mit der Verarbeitung Ihrer Daten einverstanden.
             </p>
+
+            <details class="consent-details" open>
+                <summary>Vollständige Datenschutzerklärung (anzeigen / verbergen)</summary>
+
+                <h3>1. Verantwortliche Stelle</h3>
+                <p>
+                    Verantwortlich für die Datenverarbeitung im Sinne der
+                    DSGVO ist <strong id="consent-institution">[Institution]</strong>,
+                    vertreten durch <strong id="consent-leader">[Studienleitung]</strong>.
+                    Kontakt für Rückfragen, Widerruf oder Löschanfragen:
+                    <a id="consent-email" href="mailto:[kontakt@example.org]">[kontakt@example.org]</a>.
+                </p>
+
+                <h3>2. Welche Daten werden erhoben?</h3>
+                <ul>
+                    <li>Eine pseudonyme, in Ihrem Browser zufällig erzeugte
+                        <strong>Teilnehmer-ID</strong> (z.B.
+                        <code>aB3cD4eF5gH6</code>) — sie enthält keine
+                        Klarnamen-Information.</li>
+                    <li>Ihre <strong>schriftlichen Übersetzungen</strong> der
+                        Wenker-Sätze in Ihren Dialekt.</li>
+                    <li>Optional Ihre <strong>Audio-Aufnahmen</strong>
+                        derselben Sätze (max. 30 Sekunden je Satz).</li>
+                    <li>Selbstangaben zu <strong>Postleitzahl, Alter,
+                        Geschlecht, vertrauter Sprechweise und Dialekt-Region</strong>.</li>
+                    <li>Technische Metadaten der Übermittlung (Zeitstempel,
+                        Dateigröße, gekürzte User-Agent-Information). Es
+                        wird <strong>keine IP-Adresse dauerhaft gespeichert</strong>.</li>
+                </ul>
+
+                <h3>3. Hinweis: Audio-Aufnahmen sind biometrische Daten</h3>
+                <p>
+                    Stimmaufnahmen können prinzipiell zur Identifikation
+                    einer Person geeignet sein und gelten daher als
+                    <strong>biometrische Daten besonderer Kategorie</strong>
+                    im Sinne von <strong>Art. 9 Abs. 1 DSGVO</strong>. Ihre
+                    Verarbeitung ist nur mit Ihrer <strong>ausdrücklichen
+                    Einwilligung</strong> (Art. 9 Abs. 2 lit. a DSGVO)
+                    zulässig. Wenn Sie keine Aufnahmen machen möchten,
+                    lassen Sie die Audio-Felder einfach leer — die
+                    schriftliche Teilnahme ist auch ohne Audio jederzeit
+                    möglich.
+                </p>
+
+                <h3>4. Zweck der Verarbeitung</h3>
+                <p>
+                    Die Daten werden ausschließlich zu <strong>wissenschaftlichen
+                    Forschungszwecken</strong> im Rahmen einer linguistischen
+                    Studie zur Untersuchung dialektaler Variation verwendet.
+                    Eine kommerzielle Nutzung oder Weitergabe an Dritte
+                    außerhalb des Forschungskontexts findet nicht statt.
+                </p>
+
+                <h3>5. Rechtsgrundlage</h3>
+                <p>
+                    Rechtsgrundlage ist Ihre Einwilligung gemäß
+                    <strong>Art. 6 Abs. 1 lit. a DSGVO</strong> und für die
+                    Audio-Daten zusätzlich <strong>Art. 9 Abs. 2 lit. a
+                    DSGVO</strong>. Für die wissenschaftliche Nutzung gilt
+                    zudem <strong>Art. 89 DSGVO</strong>.
+                </p>
+
+                <h3>6. Wo werden die Daten gespeichert?</h3>
+                <p>
+                    Übermittelte Daten werden verschlüsselt (HTTPS)
+                    übertragen und auf <strong id="consent-region">[Speicherort]</strong>
+                    abgelegt. Zugriff haben ausschließlich die
+                    Studienverantwortlichen.
+                </p>
+
+                <h3>7. Aufbewahrungsdauer</h3>
+                <p>
+                    Die Daten werden <strong id="consent-retention">[Aufbewahrungsdauer]</strong>
+                    aufbewahrt. Eine feste Löschfrist gibt es nicht: Die
+                    langfristige Speicherung dient ausschließlich
+                    wissenschaftlichen Forschungszwecken im Sinne von
+                    Art. 89 DSGVO – insbesondere der Replizierbarkeit
+                    von Ergebnissen, der Anschluss- und Vergleichsforschung
+                    sowie der Langzeit-Archivierung sprachwissenschaftlich
+                    wertvoller Daten. Als Schutzmaßnahme (Art. 89 Abs. 1
+                    DSGVO) werden die Daten ausschließlich pseudonym
+                    (über die Teilnehmer-ID) gespeichert.
+                </p>
+                <p>
+                    <strong>Löschung jederzeit auf Ihren Wunsch:</strong>
+                    Sie können die Löschung Ihrer Daten zu jedem
+                    beliebigen Zeitpunkt anfordern. Nach Eingang Ihrer
+                    Anforderung (mit Angabe Ihrer Teilnehmer-ID, siehe
+                    Abschnitt 9) werden Ihre Daten <em>unverzüglich</em>
+                    gelöscht. Ihr Widerruf der Einwilligung
+                    (Art. 7 Abs. 3 DSGVO) führt automatisch zur
+                    Löschung; eine Begründung müssen Sie nicht angeben.
+                </p>
+
+                <h3>8. Ihre Rechte als Teilnehmer:in</h3>
+                <p>Sie haben jederzeit das Recht auf:</p>
+                <ul>
+                    <li><strong>Auskunft</strong> über Ihre gespeicherten Daten (Art. 15 DSGVO),</li>
+                    <li><strong>Berichtigung</strong> unzutreffender Daten (Art. 16 DSGVO),</li>
+                    <li><strong>Löschung</strong> Ihrer Daten (Art. 17 DSGVO),</li>
+                    <li><strong>Einschränkung</strong> der Verarbeitung (Art. 18 DSGVO),</li>
+                    <li><strong>Datenübertragbarkeit</strong> (Art. 20 DSGVO),</li>
+                    <li><strong>Widerspruch</strong> gegen die Verarbeitung (Art. 21 DSGVO),</li>
+                    <li><strong>Widerruf Ihrer Einwilligung</strong> mit Wirkung
+                        für die Zukunft (Art. 7 Abs. 3 DSGVO). Die Rechtmäßigkeit
+                        der bis zum Widerruf erfolgten Verarbeitung bleibt unberührt.</li>
+                    <li><strong>Beschwerde bei einer Aufsichtsbehörde</strong>
+                        (Art. 77 DSGVO).</li>
+                </ul>
+
+                <h3 id="participant-id-note">9. Wichtig: Teilnehmer-ID notieren</h3>
+                <p class="warning">
+                    <strong>Bitte notieren Sie Ihre Teilnehmer-ID</strong>, die
+                    Ihnen nach Beginn der Studie angezeigt wird. Da die Daten
+                    pseudonym gespeichert werden und wir keinen Namen erheben,
+                    ist eine spätere <strong>Zuordnung zwecks Löschung,
+                    Berichtigung oder Widerruf</strong> nur mit dieser ID
+                    möglich. Ohne ID kann eine eindeutige Zuordnung Ihrer
+                    Daten <em>nicht</em> erfolgen, und ein Löschwunsch kann
+                    leider nicht umgesetzt werden.
+                </p>
+                <p>
+                    Senden Sie für Löschanfragen eine E-Mail mit Ihrer
+                    Teilnehmer-ID an die oben genannte Kontaktadresse.
+                </p>
+
+                <h3>10. Freiwilligkeit</h3>
+                <p>
+                    Die Teilnahme an der Studie ist <strong>vollständig
+                    freiwillig</strong>. Sie können die Studie jederzeit
+                    ohne Angabe von Gründen abbrechen. Aus der Nicht-Teilnahme
+                    oder dem Abbruch entstehen Ihnen keinerlei Nachteile.
+                </p>
+            </details>
+
+            <label class="consent-row">
+                <input type="checkbox" id="consent-check">
+                <span>
+                    Ich habe die Datenschutzerklärung gelesen und willige
+                    <strong>ausdrücklich</strong> in die Verarbeitung meiner
+                    Antworten <strong>einschließlich Audio-Aufnahmen
+                    (biometrische Daten i.S.v. Art. 9 DSGVO)</strong> zu
+                    den oben genannten Forschungszwecken ein. Mir ist
+                    bewusst, dass ich diese Einwilligung jederzeit für die
+                    Zukunft widerrufen kann.
+                </span>
+            </label>
         </section>
 
         <section class="card actions">
-            <button id="start-btn" class="btn btn-primary">An der Studie teilnehmen</button>
+            <button id="start-btn" class="btn btn-primary" disabled>An der Studie teilnehmen</button>
 
             <div class="resume">
                 <h3>Studie fortsetzen</h3>
@@ -59,6 +215,7 @@
         </footer>
     </main>
 
+    <script src="static/js/config.js"></script>
     <script src="static/js/index.js"></script>
 </body>
 </html>

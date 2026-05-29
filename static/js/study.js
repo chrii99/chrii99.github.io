@@ -37,6 +37,7 @@
     const submitBtn = $("#submit-btn");
     const downloadBtn = $("#download-btn");
     const feedback = $("#action-feedback");
+    const uploadStatusEl = $("#upload-status");
 
     // ----------------------------- State --------------------------------------
 
@@ -107,6 +108,10 @@
 
     function emptyRecord(pid, nSentences) {
         const now = nowIso();
+        let consentAt = null;
+        try {
+            consentAt = sessionStorage.getItem("wenker_study::consent_at") || null;
+        } catch (_) { /* ignore */ }
         return {
             participant_id: pid,
             created_at: now,
@@ -114,8 +119,15 @@
             submitted_at: null,
             submitted: false,
             status: "in_progress",
+            consent: {
+                given: !!consentAt,
+                given_at: consentAt,
+                version: "v1",
+                scope: "study_participation + audio (Art. 9 DSGVO)",
+            },
+            uploads: [], // { attempted_at, ok, storage_key|error }
             translations: new Array(nSentences).fill(""),
-            audio: new Array(nSentences).fill(null), // null oder { mime_type, ext, duration_ms, size_bytes, filename }
+            audio: new Array(nSentences).fill(null),
             variables: { PLZ: "", age: "", gender: "", sprechweise: "", dialekt: "" },
         };
     }
@@ -126,8 +138,11 @@
         try {
             const rec = JSON.parse(raw);
             if (typeof rec.submitted !== "boolean") rec.submitted = rec.status === "submitted";
-            // Abwärtskompatibilität: audio-Array nachpflegen, falls Datensatz noch ohne Audio
             if (!Array.isArray(rec.audio)) rec.audio = new Array(rec.translations.length).fill(null);
+            if (!Array.isArray(rec.uploads)) rec.uploads = [];
+            if (!rec.consent) {
+                rec.consent = { given: false, given_at: null, version: "v1", scope: "" };
+            }
             return rec;
         } catch (_) { return null; }
     }
@@ -560,26 +575,161 @@
         }
     }
 
+    function workerUrl() {
+        const cfg = (window.WENKER_CONFIG || {});
+        return (cfg.WORKER_URL || "").replace(/\/+$/, "");
+    }
+
+    async function uploadToServer(zipBlob, pid) {
+        const base = workerUrl();
+        if (!base) {
+            throw new Error("Upload-Server nicht konfiguriert (WORKER_URL in config.js fehlt).");
+        }
+        const res = await fetch(base + "/submit", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/zip",
+                "X-Participant-Id": pid,
+            },
+            body: zipBlob,
+        });
+        let data = null;
+        try { data = await res.json(); } catch (_) { /* non-JSON response */ }
+        if (!res.ok) {
+            const msg = (data && (data.error || data.detail)) || ("HTTP " + res.status);
+            const e = new Error(msg);
+            e.status = res.status;
+            throw e;
+        }
+        return data || {};
+    }
+
+    function renderUploadStatus(kind, text, opts) {
+        opts = opts || {};
+        uploadStatusEl.hidden = false;
+        uploadStatusEl.className = "card upload-status " + kind;
+        let html = "";
+        if (kind === "pending") {
+            html = `<div class="upload-spinner"></div><div>${text}</div>`;
+        } else if (kind === "success") {
+            html = `
+                <h3>✓ Vielen Dank für Ihre Teilnahme!</h3>
+                <p>${text}</p>
+                <p class="hint">
+                    <strong>Bitte notieren Sie Ihre Teilnehmer-ID:</strong>
+                    <code class="big-pid">${opts.pid}</code>
+                </p>
+                <p class="hint">
+                    Sie benötigen diese ID, falls Sie Ihre Daten später
+                    berichtigen oder löschen lassen möchten.
+                </p>
+            `;
+        } else if (kind === "error") {
+            html = `
+                <h3>⚠ Übermittlung fehlgeschlagen</h3>
+                <p>${text}</p>
+                <p>
+                    Bitte versuchen Sie es erneut oder laden Sie die ZIP-Datei
+                    herunter und senden Sie sie manuell an die Studienleitung.
+                </p>
+                <div class="upload-status-actions">
+                    <button type="button" class="btn btn-primary" id="upload-retry">Erneut versuchen</button>
+                    <button type="button" class="btn btn-secondary" id="upload-fallback-download">ZIP herunterladen</button>
+                </div>
+            `;
+        }
+        uploadStatusEl.innerHTML = html;
+        if (kind === "error") {
+            const retry = uploadStatusEl.querySelector("#upload-retry");
+            const dl = uploadStatusEl.querySelector("#upload-fallback-download");
+            if (retry) retry.addEventListener("click", () => handleSubmit(new Event("submit")));
+            if (dl) dl.addEventListener("click", handleDownload);
+        }
+        // Sanft sichtbar machen
+        uploadStatusEl.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
+
     async function handleSubmit(e) {
-        e.preventDefault();
-        if (!confirm("Studie wirklich abschicken? Es wird eine ZIP-Datei mit Ihren Antworten und Audio-Aufnahmen heruntergeladen, die Sie an die Studienleitung senden.")) return;
+        if (e && e.preventDefault) e.preventDefault();
+
+        const pid = currentParticipantId;
+        if (!confirm("Studie wirklich abschicken? Ihre Antworten und Audio-Aufnahmen werden verschlüsselt an die Studienleitung übertragen.")) return;
+
         submitBtn.disabled = true;
+        saveBtn.disabled = true;
+        downloadBtn.disabled = true;
+
+        const rec = loadRecord(pid) || emptyRecord(pid, wenkerSentences.length);
+        mergePayloadIntoRecord(rec, collectPayload());
+        rec.submitted_at = nowIso();
+        rec.status = "submitted";
+        rec.submitted = true;
+        saveRecord(rec);
+
+        let zipBlob;
         try {
-            const pid = currentParticipantId;
-            const rec = loadRecord(pid) || emptyRecord(pid, wenkerSentences.length);
-            mergePayloadIntoRecord(rec, collectPayload());
-            rec.submitted = true;
-            rec.status = "submitted";
-            rec.submitted_at = nowIso();
-            saveRecord(rec);
-            const zipBlob = await buildZipBlob(rec);
-            triggerBlobDownload(zipBlob, `${pid}.zip`);
-            setSubmittedBanner(rec);
-            setFeedback(`Abgeschickt + ZIP heruntergeladen (${(zipBlob.size / 1024).toFixed(0)} KB) ✓`, "ok");
+            renderUploadStatus("pending", "ZIP-Paket wird vorbereitet …");
+            zipBlob = await buildZipBlob(rec);
         } catch (err) {
-            setFeedback("Abschicken fehlgeschlagen: " + err.message, "err");
+            renderUploadStatus("error", "ZIP-Erstellung fehlgeschlagen: " + err.message);
+            submitBtn.disabled = false; saveBtn.disabled = false; downloadBtn.disabled = false;
+            return;
+        }
+
+        const sizeKb = (zipBlob.size / 1024).toFixed(0);
+        const hasWorker = !!workerUrl();
+
+        if (!hasWorker) {
+            // Kein Server konfiguriert: nur lokaler Download (Fallback)
+            triggerBlobDownload(zipBlob, `${pid}.zip`);
+            rec.uploads.push({
+                attempted_at: nowIso(),
+                ok: false,
+                error: "WORKER_URL nicht konfiguriert – nur lokaler Download",
+            });
+            saveRecord(rec);
+            renderUploadStatus(
+                "success",
+                `Ihre Daten wurden lokal als ZIP heruntergeladen (${sizeKb} KB). Eine automatische Server-Übermittlung war nicht konfiguriert – bitte senden Sie die ZIP-Datei an die Studienleitung.`,
+                { pid }
+            );
+            setSubmittedBanner(rec);
+            submitBtn.disabled = false; saveBtn.disabled = false; downloadBtn.disabled = false;
+            return;
+        }
+
+        try {
+            renderUploadStatus("pending", `Übertrage Ihre Daten (${sizeKb} KB) an den Studien-Server …`);
+            const data = await uploadToServer(zipBlob, pid);
+            rec.uploads.push({
+                attempted_at: nowIso(),
+                ok: true,
+                storage_key: data.storage_key || null,
+                size_bytes: data.size_bytes || zipBlob.size,
+            });
+            saveRecord(rec);
+            setSubmittedBanner(rec);
+            renderUploadStatus(
+                "success",
+                `Ihre Daten wurden erfolgreich übermittelt (${sizeKb} KB).`,
+                { pid }
+            );
+            setFeedback("Abgeschickt ✓", "ok");
+        } catch (err) {
+            rec.uploads.push({
+                attempted_at: nowIso(),
+                ok: false,
+                error: String(err.message || err),
+                http_status: err.status || null,
+            });
+            saveRecord(rec);
+            renderUploadStatus(
+                "error",
+                "Die Server-Übertragung ist gescheitert (" + (err.message || err) + ")."
+            );
+            setFeedback("Übertragung fehlgeschlagen.", "err");
         } finally {
-            submitBtn.disabled = false;
+            submitBtn.disabled = false; saveBtn.disabled = false; downloadBtn.disabled = false;
         }
     }
 

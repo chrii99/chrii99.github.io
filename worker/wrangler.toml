@@ -1,0 +1,33 @@
+# Cloudflare Wrangler-Konfiguration für den ma-dialekt-studie-Upload-Worker
+# -----------------------------------------------------------------------
+# Anpassen nach `npm install -g wrangler` und `wrangler login`:
+#   - `name`       : interner Name des Workers (frei wählbar, [a-z0-9-])
+#   - `vars.ALLOWED_ORIGIN` : Origin der ausgelieferten Website
+#     (z.B. https://<USERNAME>.github.io  oder Cloudflare-Pages-Domain)
+#   - r2_buckets.bucket_name : Name des in Cloudflare angelegten R2-Buckets
+
+name = "ma-dialekt-studie-upload"
+main = "worker.js"
+compatibility_date = "2024-11-01"
+
+# Variablen, die im Worker als env.* sichtbar sind
+[vars]
+ALLOWED_ORIGIN = "https://chrii99.github.io"
+MAX_BYTES = "52428800"   # 50 MB
+
+# R2-Binding (Bucket muss in Cloudflare R2 vorab erstellt sein)
+[[r2_buckets]]
+binding = "STUDY_BUCKET"
+bucket_name = "ma-dialekt-studie"
+
+# Optional: separater Bucket für Staging/Tests
+# preview_bucket_name = "ma-dialekt-studie-dev"
+
+# Empfohlen: Worker-Routing nur über die Workers.dev-Subdomain
+# (kostenlos: <workername>.<account>.workers.dev). Wer eine eigene
+# Domain möchte, kann hier eine `routes` oder `route` Sektion ergänzen.
+workers_dev = true
+
+# Observability-Logging einschalten (kostenlos im Free-Tier verfügbar)
+[observability]
+enabled = true

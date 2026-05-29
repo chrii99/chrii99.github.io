@@ -103,6 +103,9 @@
                 <button type="submit" id="submit-btn" class="btn btn-primary">Abschicken</button>
                 <span id="action-feedback" class="feedback" aria-live="polite"></span>
             </section>
+
+            <!-- Upload-Status nach Abschicken -->
+            <section id="upload-status" class="card upload-status" hidden aria-live="polite"></section>
         </form>
 
         <footer class="footer">
@@ -113,6 +116,7 @@
     <!-- JSZip für ZIP-Export beim Abschicken -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"
             crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="static/js/config.js"></script>
     <script src="static/js/study.js"></script>
 </body>
 </html>
