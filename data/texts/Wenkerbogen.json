@@ -49,8 +49,8 @@
         "id": 1,
         "variables":{
             "dialekt": "steirisch",
-            "PLZ": "8811",
-            "age": "26",
+            "PLZ": "8010",
+            "age": "32",
             "gender": "m"
         },
         "sentences":[
